@@ -139,3 +139,17 @@ tmpfs                             374M     0  374M   0% /run/user/1000
 /dev/mapper/vg--webdata-logs--lv   14G   42M   13G   1% /var/log
 
 ```
+
+```
+[araflyayinde@dbserver ~]$ df -h
+Filesystem                       Size  Used Avail Use% Mounted on
+devtmpfs                         1.9G     0  1.9G   0% /dev
+tmpfs                            1.9G     0  1.9G   0% /dev/shm
+tmpfs                            1.9G  8.4M  1.9G   1% /run
+tmpfs                            1.9G     0  1.9G   0% /sys/fs/cgroup
+/dev/sda2                         20G  2.5G   18G  13% /
+/dev/sda1                        200M  6.9M  193M   4% /boot/efi
+tmpfs                            374M     0  374M   0% /run/user/1000
+/dev/mapper/vg--database-db--lv   20G   45M   19G   1% /db
+[araflyayinde@dbserver ~]$ 
+```
