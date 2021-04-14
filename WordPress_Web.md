@@ -125,9 +125,17 @@ EL="Linux LVM" PARTUUID="f9785353-e0d1-4474-afbb-517503a3bf88"
 [araflyayinde@webserver ~]$ sudo vi /etc/fstab
 [araflyayinde@webserver ~]$ sudo vi /etc/fstab
 [araflyayinde@webserver ~]$ sudo mount -a
-[araflyayinde@webserver ~]$ sudo systemctl reload daemon 
-Failed to reload daemon.service: Unit not found.
 [araflyayinde@webserver ~]$ sudo systemctl daemon-reload
-[araflyayinde@webserver ~]$ 
+[araflyayinde@webserver ~]$ df -h
+Filesystem                        Size  Used Avail Use% Mounted on
+devtmpfs                          1.9G     0  1.9G   0% /dev
+tmpfs                             1.9G     0  1.9G   0% /dev/shm
+tmpfs                             1.9G  8.4M  1.9G   1% /run
+tmpfs                             1.9G     0  1.9G   0% /sys/fs/cgroup
+/dev/sda2                          20G  2.5G   18G  13% /
+/dev/sda1                         200M  6.9M  193M   4% /boot/efi
+tmpfs                             374M     0  374M   0% /run/user/1000
+/dev/mapper/vg--webdata-apps--lv   14G   41M   13G   1% /var/www/html
+/dev/mapper/vg--webdata-logs--lv   14G   42M   13G   1% /var/log
 
 ```
