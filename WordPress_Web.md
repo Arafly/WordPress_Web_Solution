@@ -263,7 +263,7 @@ EL="Linux LVM" PARTUUID="f9785353-e0d1-4474-afbb-517503a3bf88"
 
 Update /etc/fstab in this format using your own UUID.
 
-*fstab image
+![](https://github.com/Arafly/WordPress_Web_Solution/blob/master/assets/fstab.png)
 
 Test the configuration and reload the daemon
 
@@ -422,38 +422,24 @@ Remember to address of the webserver to the *bind-address* and also open up the 
 
 ## Step 6 — Configure WordPress to connect to remote database.
 
-Install MySQL client and test that you can connect from your Web Server to your DB server by using mysql-client
-sudo yum install mysql
-sudo mysql -u admin -p -h <DB-Server-Private-IP-address>
+1. Install MySQL client and test that you can connect from your Web Server to your DB server by using mysql-client
+
+`sudo yum install mysql-server`
+
+Ensure your mysqld is running and persistent through restarts of the server.
+
+`sudo systemctl restart mysqld`
+
+`sudo systemctl enable mysqld`
+
+Now connect to your remote db.
+
+`sudo mysql -u wp_user -p -h <DB-Server-Private-IP-address>`
 Verify if you can successfully execute SHOW DATABASES; command and see a list of existing databases.
-Change permissions and configuration so Apache could use WordPress:
-Enable TCP port 80 in Inbound Rules configuration for your Web Server EC2 (enable from everywhere 0.0.0.0/0 or from your workstation’s IP)
-Try to access from your browser the link to your WordPress http://<Web-Server-Public-IP-Address>/wordpress/
 
 ```
-[araflyayinde@dbserver ~]$ sudo systemctl start mysqld
-[araflyayinde@dbserver ~]$ sudo systemctl status mysqld
-● mysqld.service - MySQL 8.0 database server
-   Loaded: loaded (/usr/lib/systemd/system/mysqld.service; disabled; vendor pr>
-   Active: active (running) since Wed 2021-04-14 11:16:47 UTC; 4s ago
-  Process: 139095 ExecStartPost=/usr/libexec/mysql-check-upgrade (code=exited,>
-  Process: 138969 ExecStartPre=/usr/libexec/mysql-prepare-db-dir mysqld.servic>
-  Process: 138944 ExecStartPre=/usr/libexec/mysql-check-socket (code=exited, s>
- Main PID: 139050 (mysqld)
-   Status: "Server is operational"
-    Tasks: 39 (limit: 23411)
-   Memory: 427.0M
-   CGroup: /system.slice/mysqld.service
-           └─139050 /usr/libexec/mysqld --basedir=/usr
-Apr 14 11:16:40 dbserver systemd[1]: Starting MySQL 8.0 database server...
-Apr 14 11:16:41 dbserver mysql-prepare-db-dir[138969]: Initializing MySQL data>
-Apr 14 11:16:47 dbserver systemd[1]: Started MySQL 8.0 database server.
-lines 1-16/16 (END)
-```
+Output:
 
-## Connect to DB
-```
-[araflyayinde@webserver ~]$ sudo mysql -u wordpress_user -p -h 10.154.0.5
 Enter password: 
 Welcome to the MySQL monitor.  Commands end with ; or \g.
 Your MySQL connection id is 9
@@ -474,3 +460,31 @@ mysql> SHOW DATABASES;
 2 rows in set (0.01 sec)
 mysql> 
 ```
+
+2. Edit the wp-config.php file to contain details about the remote db i.e database_name, database_user, database_password. 
+3. Change permissions and configuration so Apache could use WordPress. 
+  
+`sudo chown -R apache:apache /var/www/html/`
+
+1. Delete the default apache page and replace with by running this command in your /var/www/html folder. Then restart apache.
+
+`sudo mv /etc/httpd/config.d/welcome.conf /etc/httpd/config.d/welcome-backup.conf`
+
+
+>Enable TCP port 80 in Inbound Rules configuration for your Web Server EC2 (enable from everywhere 0.0.0.0/0)
+
+Now try to access from your browser the link to your WordPress 
+
+http://Web-Server-Public-IP-Address
+
+You should get the following images below:
+
+![](https://github.com/Arafly/WordPress_Web_Solution/blob/master/assets/wp1.PNG)
+
+![](https://github.com/Arafly/WordPress_Web_Solution/blob/master/assets/wp_2.PNG)
+
+![](https://github.com/Arafly/WordPress_Web_Solution/blob/master/assets/wp_3.png)
+
+
+CONGRATULATIONS!
+You have learned how to configure Linux storage susbystem and have also deployed a full-scale Web Solution using WordPress CMS and MySQL RDBMS!
