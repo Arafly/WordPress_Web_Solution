@@ -222,11 +222,27 @@ tmpfs                                      379M     0  379M   0% /run/user/0
 /dev/mapper/vg--webdata-communication--lv   14G   41M   13G   1% /var/www/html
 ```
 
-11.
+11. Use rsync utility to backup all the files in the log directory /var/log into /home/recovery/logs (This is required before mounting the file system
+
+`sudo rsync -av /var/log /home/recovery/logs/`
+
+12. You can now mount /var/log on logs-lv logical volume.
+
+> Note that all the existing data on /var/log will be deleted, which is why step above is very crucial
+
+`sudo mount /dev/vg-webdata/logs-lv /var/log`
+
+13. Restore log files back into /var/log directory
+
+`sudo rsync -av /home/recovery/logs/log/. /var/log`
+
+14. The UUID of the device will be used to update the /etc/fstab file. Update /etc/fstab file so that the mount configuration will persist after restart of the server.
+
+`$ sudo blkid`
 
 ```
+Output:
 
-[araflyayinde@webserver ~]$ sudo blkid
 /dev/sda1: SEC_TYPE="msdos" UUID="D139-1579" TYPE="vfat" PARTLABEL="EFI System Part
 ition" PARTUUID="7d417c64-815f-43db-b535-0e6a14f426d3" 
 /dev/sda2: LABEL="root" UUID="fbf3ebcb-184f-47eb-bebc-14369017fcfe" TYPE="xfs" PART
@@ -240,13 +256,28 @@ EL="Linux LVM" PARTUUID="f9785353-e0d1-4474-afbb-517503a3bf88"
 /dev/mapper/vg--webdata-communication--lv: UUID="535ced99-9d4c-4741-898f-ca217c0219
 67" TYPE="ext4" 
 /dev/mapper/vg--webdata-logs--lv: UUID="f55c76f1-9cb2-42f3-bb36-1e634529d94d" TYPE=
-"ext4" 
-[araflyayinde@webserver ~]$ sudo vi /etc/fstab
-[araflyayinde@webserver ~]$ sudo vi /etc/fstab
-[araflyayinde@webserver ~]$ sudo vi /etc/fstab
-[araflyayinde@webserver ~]$ sudo mount -a
-[araflyayinde@webserver ~]$ sudo systemctl daemon-reload
-[araflyayinde@webserver ~]$ df -h
+"ext4"
+```
+
+`sudo vi /etc/fstab`
+
+Update /etc/fstab in this format using your own UUID.
+
+*fstab image
+
+Test the configuration and reload the daemon
+
+```
+$ sudo mount -a
+$ sudo systemctl daemon-reload
+```
+
+Verify your setup by running:
+`$ df -h`
+
+```
+Output:
+
 Filesystem                        Size  Used Avail Use% Mounted on
 devtmpfs                          1.9G     0  1.9G   0% /dev
 tmpfs                             1.9G     0  1.9G   0% /dev/shm
@@ -260,8 +291,16 @@ tmpfs                             374M     0  374M   0% /run/user/1000
 
 ```
 
+## Step 2 — Prepare the Database Server
+
+We'd launch a second RedHat instance that will have a designated role - ‘DB Server’.We'd repeat the same exact steps as for the Web Server, but instead of *apps-lv*, create db-lv and mount it to /db directory instead of /var/www/html/ as was in the web server.
+After the entire process, you should end up with something like this when you run:
+
+`$ df -h`
+
 ```
-[araflyayinde@dbserver ~]$ df -h
+Output:
+
 Filesystem                       Size  Used Avail Use% Mounted on
 devtmpfs                         1.9G     0  1.9G   0% /dev
 tmpfs                            1.9G     0  1.9G   0% /dev/shm
@@ -271,26 +310,41 @@ tmpfs                            1.9G     0  1.9G   0% /sys/fs/cgroup
 /dev/sda1                        200M  6.9M  193M   4% /boot/efi
 tmpfs                            374M     0  374M   0% /run/user/1000
 /dev/mapper/vg--database-db--lv   20G   45M   19G   1% /db
-[araflyayinde@dbserver ~]$ 
+
 ```
 
-Step 3 — Install Wordpress on your Web Server EC2
-Update the repository
+## Step 3 — Install Wordpress on your Web Server
 
-sudo yum -y update
+1. Firstly update the server
 
-Install wget, Apache and it’s dependencies
+`sudo yum -y update`
 
-sudo yum -y install wget httpd php php-mysqlnd php-fpm php-json
+2. Install wget, Apache and it’s dependencies and start Apache.
 
-Start Apache
+`sudo yum -y install wget httpd php php-mysqlnd php-fpm php-json`
 
+```
 sudo systemctl enable httpd
 sudo systemctl start httpd
+```
 
+3. Install PHP and it’s depemdencies and restart Apache.
 
 ```
-[araflyayinde@webserver ~]$ sudo yum module list php
+sudo yum install https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+sudo yum install yum-utils http://rpms.remirepo.net/enterprise/remi-release-8.rpm
+sudo yum module list php
+sudo yum module reset php
+sudo yum module enable php:remi-7.4
+sudo yum install php php-opcache php-gd php-curl php-mysqlnd
+sudo systemctl start php-fpm
+sudo systemctl enable php-fpm
+setsebool -P httpd_execmem 1
+```
+
+```
+Output:
+
 Remi's Modular repository for Enterprise Lin 4.0 MB/s | 745 kB     00:00    
 Safe Remi's RPM repository for Enterprise Li  10 MB/s | 1.7 MB     00:00    
 CentOS Linux 8 - AppStream
@@ -307,12 +361,15 @@ php     remi-8.0      common [d], devel, minimal    PHP scripting language
 Hint: [d]efault, [e]nabled, [x]disabled, [i]nstalled
 ```
 
-Restart Apache
+`sudo systemctl restart httpd`
 
-sudo systemctl restart httpd
+Enter your ip into your browser and you should see Apache's default page
 
-Download wordpress and copy wordpress to var/www/html
+![](https://github.com/Arafly/WordPress_Web_Solution/blob/master/assets/apache.PNG)
 
+4. Download wordpress and copy wordpress to var/www/html
+
+```
 mkdir wordpress
 cd   wordpress
 sudo wget http://wordpress.org/latest.tar.gz
@@ -320,30 +377,50 @@ sudo tar xzvf latest.tar.gz
 sudo rm -rf latest.tar.gz
 cp wordpress/wp-config-sample.php wordpress/wp-config.php
 cp -R wordpress /var/www/html/
-Configure SELinux Policies
+```
 
+
+5. Next is to configure some SELinux Policies
+
+ ```
  sudo chown -R apache:apache /var/www/html/wordpress
  sudo chcon -t httpd_sys_rw_content_t /var/www/html/wordpress -R
  sudo setsebool -P httpd_can_network_connect=1
+ ```
 
- Step 4 — Install MySQL on your DB Server EC2
+## Step 4 — Install MySQL on your DB Server
+```
 sudo yum update
 sudo yum install mysql-server
-Verify that the service is up and running by using sudo systemctl status mysqld, if it is not running, restart the service and enable it so it will be running even after reboot:
+```
 
+Verify that the service is up and running by using `sudo systemctl status mysqld`, if it is not running, restart the service and enable it so it will be running even after reboot:
+
+```
 sudo systemctl restart mysqld
 sudo systemctl enable mysqld
+```
 
-Step 5 — Configure DB to work with WordPress
-sudo mysql
-CREATE DATABASE wordpress;
-CREATE USER `myuser`@`<Web-Server-Private-IP-Address>` IDENTIFIED BY 'mypass';
-GRANT ALL ON wordpress.* TO 'myuser'@'<Web-Server-Private-IP-Address>';
-FLUSH PRIVILEGES;
-SHOW DATABASES;
-exit
+For more secure installation you should run:
+`$ sudo mysql_secure_installation`
 
-Step 6 — Configure WordPress to connect to remote database.
+## Step 5 — Configure DB to work with WordPress
+
+We'd need to create a database, a wordpress user, and grant the user all privileges to the db.
+
+```
+sudo mysql -u root -p
+mysql> CREATE DATABASE wordpress;
+mysql> CREATE USER 'wp_user'@`%` IDENTIFIED BY 'mypass';
+mysql> GRANT ALL ON wordpress.* TO 'wp_user'@'%';
+
+mysql> SHOW DATABASES;
+mysql> exit
+```
+
+Remember to address of the webserver to the *bind-address* and also open up the port 3306 on the firewall of your VM. You can decide to allow inbound traffic from everywhere (0.0.0.0/0) or specify just the ip of the web server. It's your choice (I chose the former as this VMs are ephemeral, so security is not really a concern).
+
+## Step 6 — Configure WordPress to connect to remote database.
 
 Install MySQL client and test that you can connect from your Web Server to your DB server by using mysql-client
 sudo yum install mysql
