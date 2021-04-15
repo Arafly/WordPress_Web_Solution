@@ -3,7 +3,8 @@
 In this project, we'd demonstarte a Three-tier Architecture while also ensuring that the disks used to store files on the Linux servers are adequately partitioned and managed through programs such as gdisk and LVM respectively.
 
 ### Prerequisite
-Two GCP VM (CentOS8). One to serve as a web server (This is where you will install Wordpress) and the other a database (DB) server
+1. Two GCP VM (CentOS8). One to serve as a web server (This is where you will install Wordpress) and the other a database (DB) server
+2. Have SSH access into both of the servers.
 
 ## Step 1 — Prepare the Web Server
 
@@ -191,8 +192,8 @@ sdd                                 8:48   0   20G  0 disk
 8. Next, use mkfs.ext4 to format the logical volumes with ext4 filesystem
 
 ```
-sudo mkfs -t ext4 /dev/webdata-vg/communication-lv
-sudo mkfs -t ext4 /dev/webdata-vg/logs-lv
+sudo mkfs -t ext4 /dev/vg-webdata/communication-lv
+sudo mkfs -t ext4 /dev/vg-webdata/logs-lv
 ```
 
 9. Create /home/recovery/logs to store backup of log data
@@ -201,7 +202,7 @@ sudo mkfs -t ext4 /dev/webdata-vg/logs-lv
 
 10. Then, mount /var/www/html on communication-lv logical volume
 
-`sudo mount /dev/webdata-vg/apps-lv /var/www/html/`
+`sudo mount /dev/vg-webdata/apps-lv /var/www/html/`
 
 Verify the setup now using 
 
@@ -471,7 +472,7 @@ mysql>
 `sudo mv /etc/httpd/config.d/welcome.conf /etc/httpd/config.d/welcome-backup.conf`
 
 
->Enable TCP port 80 in Inbound Rules configuration for your Web Server EC2 (enable from everywhere 0.0.0.0/0)
+>Enable TCP port 80 in Inbound Rules configuration for your Web Server(enable from everywhere 0.0.0.0/0)
 
 Now try to access from your browser the link to your WordPress 
 
